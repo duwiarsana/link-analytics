@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkTrace - Analytics & Visitor Location Tracker</title>
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js & Leaflet Map -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-background"></div>
+
+  <header class="navbar">
+    <div class="container nav-content">
+      <div class="logo">
+        <i class="fa-solid fa-location-crosshairs"></i>
+        <span>LinkTrace<span class="logo-badge">PRO</span></span>
+      </div>
+      <div class="nav-right">
+        <span class="status-indicator"><i class="fa-solid fa-circle"></i> Live Analytics</span>
+        <button class="btn btn-sm btn-danger" id="logoutBtn" style="display:none;">
+          <i class="fa-solid fa-right-from-bracket"></i> Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <!-- Hero / Generator Section -->
+    <section class="card generator-card">
+      <div class="card-header">
+        <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Buat Link Pelacak Baru</h2>
+        <p>Masukkan URL target Anda untuk membuat link khusus yang bisa mendeteksi asal lokasi, referrer (WA/IG/FB/Google), dan jenis HP/Komputer pengaksesnya.</p>
+      </div>
+      
+      <form id="createLinkForm" class="generator-form">
+        <div class="form-grid">
+          <div class="form-group span-2">
+            <label for="targetUrl"><i class="fa-solid fa-link"></i> URL Tujuan (Target URL)</label>
+            <input type="url" id="targetUrl" placeholder="https://contoh-website.com/promo-desember" required>
+          </div>
+
+          <div class="form-group">
+            <label for="title"><i class="fa-solid fa-tag"></i> Judul / Label Campaign (Opsional)</label>
+            <input type="text" id="title" placeholder="Contoh: Promo WA Grup">
+          </div>
+
+          <div class="form-group">
+            <label for="customCode"><i class="fa-solid fa-pen-to-square"></i> Alias Kustom (Opsional)</label>
+            <input type="text" id="customCode" placeholder="promo-wa">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg" id="generateBtn">
+          <i class="fa-solid fa-bolt"></i> Generate Trackable Link
+        </button>
+      </form>
+
+      <!-- Result Card (Hidden by default) -->
+      <div id="resultBox" class="result-box hidden">
+        <div class="result-header">
+          <i class="fa-solid fa-circle-check"></i> Link Pelacak Berhasil Dibuat!
+        </div>
+        <div class="result-input-group">
+          <input type="text" id="generatedLinkInput" readonly>
+          <button class="btn btn-copy" id="copyLinkBtn"><i class="fa-solid fa-copy"></i> Salin</button>
+          <a href="#" target="_blank" id="testLinkBtn" class="btn btn-test"><i class="fa-solid fa-arrow-up-right-from-square"></i> Tes Buka Link</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Dashboard Section -->
+    <section class="dashboard-grid">
+      <!-- Left Column: Links List -->
+      <div class="card links-list-card">
+        <div class="card-header flex-between">
+          <h3><i class="fa-solid fa-list-check"></i> Daftar Link Pelacak</h3>
+          <button class="btn btn-sm btn-outline" id="refreshLinksBtn"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+        </div>
+        <div id="linksList" class="links-list">
+          <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Memuat daftar link...</div>
+        </div>
+      </div>
+
+      <!-- Right Column: Selected Link Analytics -->
+      <div class="analytics-wrapper">
+        <div class="card analytics-header-card" id="analyticsHeaderCard">
+          <div class="flex-between flex-wrap gap-2">
+            <div>
+              <span class="badge" id="activeLinkCode">SELECT LINK</span>
+              <h2 id="activeLinkTitle" class="active-title">Pilih link untuk melihat rincian analytics</h2>
+              <p id="activeLinkTarget" class="active-target-url text-muted">-</p>
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-danger btn-sm" id="deleteLinkBtn" style="display:none;">
+                <i class="fa-solid fa-trash"></i> Hapus Link
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Overview Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon icon-blue"><i class="fa-solid fa-chart-line"></i></div>
+            <div class="metric-info">
+              <span class="metric-label">Total Pengunjung</span>
+              <h3 class="metric-value" id="statTotalClicks">0</h3>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon icon-green"><i class="fa-solid fa-earth-americas"></i></div>
+            <div class="metric-info">
+              <span class="metric-label">Kota / Lokasi Terbanyak</span>
+              <h3 class="metric-value" id="statTopCity">-</h3>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon icon-purple"><i class="fa-solid fa-share-nodes"></i></div>
+            <div class="metric-info">
+              <span class="metric-label">Sumber Utama (Referrer)</span>
+              <h3 class="metric-value" id="statTopReferrer">-</h3>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-icon icon-orange"><i class="fa-solid fa-mobile-screen-button"></i></div>
+            <div class="metric-info">
+              <span class="metric-label">Perangkat Dominan</span>
+              <h3 class="metric-value" id="statTopDevice">-</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Map Card -->
+        <div class="card map-card">
+          <div class="card-header flex-between">
+            <h4><i class="fa-solid fa-map-location-dot" style="color:#06b6d4;"></i> Peta Lokasi Pengunjung Real-Time (GPS & IP)</h4>
+            <span class="badge" style="border-color:#06b6d4; color:#06b6d4;" id="mapPinCount">0 Titik Lokasi</span>
+          </div>
+          <div id="map" class="map-container"></div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+          <div class="card chart-card">
+            <h4><i class="fa-solid fa-pie-chart"></i> Sumber Asal Pengunjung (Referrer)</h4>
+            <div class="chart-container">
+              <canvas id="referrerChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card chart-card">
+            <h4><i class="fa-solid fa-chart-column"></i> Jenis Perangkat</h4>
+            <div class="chart-container">
+              <canvas id="deviceChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- Standalone Full-Width Detailed Log Table Section -->
+    <section class="logs-section" style="margin-top: 24px;">
+      <div class="card logs-card">
+        <div class="card-header flex-between">
+          <h4><i class="fa-solid fa-clock-rotate-left"></i> Log Pengunjung Real-Time</h4>
+          <span class="logs-count-badge" id="logsCountBadge">0 Kunjungan</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table" id="logsTable">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Lokasi & Koordinat</th>
+                <th>Asal / Referrer</th>
+                <th>Perangkat & OS</th>
+                <th>Browser</th>
+                <th>IP & Maps</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody">
+              <tr>
+                <td colspan="6" class="text-center py-4 text-muted">Belum ada kunjungan untuk link ini</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Login Modal Overlay -->
+  <div id="loginModal" class="login-modal-overlay">
+    <div class="login-modal-card">
+      <div class="login-header">
+        <i class="fa-solid fa-shield-halved login-icon"></i>
+        <h2>Login Admin</h2>
+        <p>Masukkan username dan password untuk mengaktifkan Dashboard Analytics</p>
+      </div>
+
+      <form id="loginForm" class="login-form">
+        <div class="form-group">
+          <label for="loginUser"><i class="fa-solid fa-user"></i> Username</label>
+          <input type="text" id="loginUser" placeholder="Masukkan username" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label for="loginPass"><i class="fa-solid fa-lock"></i> Password</label>
+          <input type="password" id="loginPass" placeholder="Masukkan password" required autocomplete="current-password">
+        </div>
+
+        <div id="loginError" class="login-error hidden"></div>
+
+        <button type="submit" class="btn btn-primary btn-lg" id="loginSubmitBtn" style="margin-top:12px;">
+          <i class="fa-solid fa-right-to-bracket"></i> Masuk ke Dashboard
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer container">
+    <p>LinkTrace Analytics Engine &copy; 2026. Built for precise referral tracking and visitor insight.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
