@@ -56,60 +56,8 @@ function loadDatabaseFromDisk() {
       });
       console.log(`💾 Persistent database loaded. Total links: ${linksDb.size}`);
     } else {
-      // Pre-populate initial demo data if database file doesn't exist
-      const demoCode = 'demo123';
-      linksDb.set(demoCode, {
-        code: demoCode,
-        title: 'Link Promo Toko Online (Demo)',
-        targetUrl: 'https://shopee.co.id',
-        createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-        clicks: [
-          {
-            timestamp: new Date(Date.now() - 3600000 * 5).toISOString(),
-            ip: '180.252.12.98',
-            country: 'Indonesia',
-            city: 'Sanur, Denpasar (Bali)',
-            isp: 'Telkomsel Bali',
-            lat: -8.6883,
-            lon: 115.2634,
-            locType: 'GPS Presisi',
-            referrerCategory: 'WhatsApp',
-            referrerRaw: 'https://api.whatsapp.com',
-            device: 'Mobile (Android)',
-            browser: 'Chrome 122.0'
-          },
-          {
-            timestamp: new Date(Date.now() - 3600000 * 3).toISOString(),
-            ip: '114.124.201.45',
-            country: 'Indonesia',
-            city: 'Denpasar (Bali)',
-            isp: 'Biznet Bali',
-            lat: -8.6705,
-            lon: 115.2126,
-            locType: 'GPS Presisi',
-            referrerCategory: 'Instagram',
-            referrerRaw: 'https://l.instagram.com',
-            device: 'Mobile (iPhone)',
-            browser: 'Mobile Safari 17.2'
-          },
-          {
-            timestamp: new Date(Date.now() - 3600000 * 1).toISOString(),
-            ip: '139.192.14.88',
-            country: 'Indonesia',
-            city: 'Kuta, Badung (Bali)',
-            isp: 'Indosat Ooredoo',
-            lat: -8.7205,
-            lon: 115.1692,
-            locType: 'IP Geolocation',
-            referrerCategory: 'Direct / Langsung',
-            referrerRaw: 'Langsung / Ketik URL',
-            device: 'Desktop (macOS)',
-            browser: 'Chrome 122.0'
-          }
-        ]
-      });
       saveDatabaseToDisk();
-      console.log('💾 Initial demo database created and saved to disk.');
+      console.log('💾 Initial clean database created.');
     }
   } catch (err) {
     console.error('Error loading database from disk:', err);
