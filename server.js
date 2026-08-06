@@ -242,14 +242,20 @@ function categorizeReferrer(refHeader) {
   }
 }
 
+// Allowed System Users & Passwords
+const USERS = {
+  'duwiarsana': process.env.ADMIN_PASS || 'Duwiarsana1234!?',
+  'guest': '12345678'
+};
+
 // AUTH API: LOGIN
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
 
-  if (username === ADMIN_USER && password === ADMIN_PASS) {
+  if (username && USERS[username] && USERS[username] === password) {
     const token = crypto.randomBytes(32).toString('hex');
     activeTokens.add(token);
-    return res.json({ success: true, token, username: ADMIN_USER });
+    return res.json({ success: true, token, username });
   }
 
   res.status(401).json({ error: 'Username atau Password salah!' });

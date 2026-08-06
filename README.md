@@ -52,12 +52,16 @@ Buka browser Anda dan akses: `http://localhost:3009`
 
 ---
 
-## 🔐 Kredensial Default Admin
+## 🔐 Kredensial Admin & Guest
 
-- **Username**: `duwiarsana`
-- **Password**: `Duwiarsana1234!?`
+Aplikasi ini mendukung multi-user autentikasi:
 
-*Catatan: Kredensial dapat diubah melalui Environment Variables (`ADMIN_USER` & `ADMIN_PASS`) pada file server atau PM2.*
+| Username | Password | Peran / Akses |
+| :--- | :--- | :--- |
+| `duwiarsana` | `Duwiarsana1234!?` | Super Admin |
+| `guest` | `12345678` | Guest Account |
+
+*Catatan: Kredensial admin utama dapat diubah melalui Environment Variables (`ADMIN_PASS`).*
 
 ---
 
