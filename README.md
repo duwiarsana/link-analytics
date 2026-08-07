@@ -57,16 +57,16 @@ Buka browser Anda dan akses: `http://localhost:3009`
 
 ---
 
-## 🔐 Kredensial Admin & Guest
+## 🔐 Keamanan & Akses Akun
 
 Aplikasi ini mendukung multi-user autentikasi:
 
-| Username | Password | Peran / Akses |
+| Username | Peran / Akses | Pengaturan Password |
 | :--- | :--- | :--- |
-| `duwiarsana` | `Duwiarsana1234!?` | Super Admin |
-| `guest` | `12345678` | Guest Account |
+| `duwiarsana` | Super Admin | Diatur melalui Environment Variable (`ADMIN_PASS`) |
+| `guest` | Guest Account | Akses Terbatas |
 
-*Catatan: Kredensial admin utama dapat diubah melalui Environment Variables (`ADMIN_PASS`).*
+*Demi alasan keamanan, jangan pernah menyimpan password plaintext di repositori publik.*
 
 ---
 
@@ -74,7 +74,7 @@ Aplikasi ini mendukung multi-user autentikasi:
 
 ### 1. Jalankan dengan PM2
 ```bash
-PORT=3009 pm2 start server.js --name "link-analytics"
+PORT=3009 ADMIN_PASS="PasswordAnda" pm2 start server.js --name "link-analytics"
 ```
 
 ### 2. Konfigurasi Reverse Proxy Nginx
