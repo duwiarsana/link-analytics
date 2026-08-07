@@ -57,19 +57,6 @@ Buka browser Anda dan akses: `http://localhost:3009`
 
 ---
 
-## 🔐 Keamanan & Akses Akun
-
-Aplikasi ini mendukung multi-user autentikasi:
-
-| Username | Peran / Akses | Pengaturan Password |
-| :--- | :--- | :--- |
-| `duwiarsana` | Super Admin | Diatur melalui Environment Variable (`ADMIN_PASS`) |
-| `guest` | Guest Account | Akses Terbatas |
-
-*Demi alasan keamanan, jangan pernah menyimpan password plaintext di repositori publik.*
-
----
-
 ## 🌐 Deploy ke VPS (Production Nginx & PM2)
 
 ### 1. Jalankan dengan PM2
