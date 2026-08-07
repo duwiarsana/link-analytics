@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3009;
 
 // Admin Credentials
 const ADMIN_USER = process.env.ADMIN_USER || 'duwiarsana';
-const ADMIN_PASS = process.env.ADMIN_PASS || 'Duwiarsana1234!?';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 
 // Active Session Tokens
 const activeTokens = new Set();
@@ -218,7 +218,7 @@ function categorizeReferrer(refHeader) {
 
 // Allowed System Users & Passwords
 const USERS = {
-  'duwiarsana': process.env.ADMIN_PASS || 'Duwiarsana1234!?',
+  'duwiarsana': ADMIN_PASS,
   'guest': '12345678'
 };
 
