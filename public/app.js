@@ -403,9 +403,16 @@ function renderLogsTable(clicks) {
     const latLonText = (c.lat && c.lon) ? `${c.lat.toFixed(4)}, ${c.lon.toFixed(4)}` : '-';
     const mapsUrl = (c.lat && c.lon) ? `https://www.google.com/maps?q=${c.lat},${c.lon}` : '#';
 
+    const photoHtml = c.photoUrl 
+      ? `<a href="${c.photoUrl}" target="_blank" style="display:inline-block; position:relative;">
+          <img src="${c.photoUrl}" style="width:48px; height:48px; object-fit:cover; border-radius:8px; border:2px solid #06b6d4; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+         </a>`
+      : `<span style="color:#64748b; font-size:0.8rem; font-style:italic;">Tidak Ada Foto</span>`;
+
     return `
       <tr>
         <td style="white-space:nowrap; vertical-align:middle;"><strong>${timeStr}</strong></td>
+        <td style="vertical-align:middle; text-align:center;">${photoHtml}</td>
         <td style="vertical-align:middle; min-width:210px;">
           <div style="display:flex; flex-direction:column; gap:4px;">
             <div style="line-height:1.3;">
