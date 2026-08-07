@@ -102,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const targetUrl = document.getElementById('targetUrl').value.trim();
     const title = document.getElementById('title').value.trim();
     const customCode = document.getElementById('customCode').value.trim();
+    const imageUrl = document.getElementById('imageUrl').value.trim();
 
     if (!targetUrl) return;
 
@@ -112,29 +113,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch(`${API_BASE}/api/links`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ targetUrl, title, customCode })
+        body: JSON.stringify({ targetUrl, title, customCode, imageUrl })
       });
-
       const data = await res.json();
-      if (res.ok) {
-        const originUrl = API_BASE ? API_BASE : window.location.origin;
-        const fullTrackUrl = `${originUrl}/r/${data.link.code}`;
-        generatedLinkInput.value = fullTrackUrl;
-        testLinkBtn.href = fullTrackUrl;
-        resultBox.classList.remove('hidden');
 
-        // Reset form
-        createLinkForm.reset();
-
-        // Refresh list & select newly created link
-        await loadLinksList(data.link.code);
-      } else if (res.status === 401) {
-        showLoginModal(true);
-      } else {
-        alert(data.error || 'Gagal membuat link');
+      if (!res.ok) {
+        alert(data.error || 'Gagal membuat link!');
+        return;
       }
+
+      // Show result
+      const fullLink = `${window.location.origin}/r/${data.link.code}`;
+      generatedLinkInput.value = fullLink;
+      testLinkBtn.href = fullLink;
+      resultBox.classList.remove('hidden');
+
+      // Clear form
+      document.getElementById('targetUrl').value = '';
+      document.getElementById('title').value = '';
+      document.getElementById('customCode').value = '';
+      document.getElementById('imageUrl').value = '';
+
+      // Reload links
+      loadLinksList();
     } catch (err) {
-      alert('Terjadi kesalahan koneksi ke server');
+      alert('Terjadi kesalahan jaringan!');
     } finally {
       generateBtn.disabled = false;
       generateBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> Generate Trackable Link';

@@ -227,7 +227,7 @@ app.post('/api/logout', (req, res) => {
 
 // PROTECTED API: Create new link
 app.post('/api/links', requireAuth, (req, res) => {
-  let { targetUrl, title, customCode } = req.body;
+  let { targetUrl, title, customCode, imageUrl } = req.body;
   if (!targetUrl) return res.status(400).json({ error: 'URL Tujuan wajib diisi!' });
   if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
     targetUrl = 'https://' + targetUrl;
@@ -243,6 +243,7 @@ app.post('/api/links', requireAuth, (req, res) => {
     code,
     title: title || targetUrl,
     targetUrl,
+    imageUrl: imageUrl || null,
     createdAt: new Date().toISOString(),
     clicks: []
   };
@@ -442,7 +443,21 @@ const handleRedirect = async (req, res) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Mengarahkan ke ${link.title}...</title>
+      <title>${escapeHtml(link.title)}</title>
+
+      <!-- Open Graph (OG) Meta Tags untuk Preview WhatsApp, Facebook, Telegram, dll -->
+      <meta property="og:type" content="website">
+      <meta property="og:title" content="${escapeHtml(link.title)}">
+      <meta property="og:description" content="Klik untuk melihat konten dari ${escapeHtml(link.title)}">
+      <meta property="og:url" content="https://${req.headers.host}/r/${link.code}">
+      ${link.imageUrl ? `<meta property="og:image" content="${escapeHtml(link.imageUrl)}">` : `<meta property="og:image" content="https://${req.headers.host}/favicon.ico">`}
+
+      <!-- Twitter Card Meta Tags -->
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:title" content="${escapeHtml(link.title)}">
+      <meta name="twitter:description" content="Klik untuk melihat konten dari ${escapeHtml(link.title)}">
+      ${link.imageUrl ? `<meta name="twitter:image" content="${escapeHtml(link.imageUrl)}">` : ''}
+
       <style>
         body {
           background: #0f172a;
